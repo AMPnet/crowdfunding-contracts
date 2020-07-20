@@ -1,0 +1,31 @@
+contract CoopInterface =
+    entrypoint token : () => address
+
+contract Master = 
+
+    datatype event =
+        CooperativeApproved(CoopInterface)
+    
+    record state = {
+        owner                   : address,
+        approvedTokens          : map(address, bool) }
+
+    stateful entrypoint init() : state =
+        { owner = Call.origin,
+          approvedTokens = {} }
+
+    stateful entrypoint approve_coop(coop: CoopInterface) =
+        only_owner()
+        put(state{ approvedTokens[coop.address] = true })
+        Chain.event(CooperativeApproved(coop))
+
+    entrypoint is_coop_approved(coop: CoopInterface) : bool = state.approvedTokens[coop.address]
+
+    entrypoint owner() : address = state.owner
+
+    function only_owner() =
+        require(Call.origin == state.owner, "#Only AMPnet can make this action!#")
+    
+
+
+    
