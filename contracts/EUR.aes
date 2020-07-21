@@ -1,4 +1,9 @@
+contract MasterInterface =
+  entrypoint is_coop_approved : (address) => bool
+  entrypoint is_proj_public: (address) => bool
+
 contract CoopInterface =
+    entrypoint master : () => MasterInterface
     entrypoint is_wallet_active : (address) => bool
 
 contract EUR =
@@ -58,8 +63,7 @@ contract EUR =
     let caller = Call.caller
     only_coop_user(caller, "#Wallet not activated. Activate your wallet before approving funds withdrawal.#")
     require(value > 0, "#Amount of funds to be approved for withdrawal must be grater than 0.#")
-    // require(spender != #0, "Invalid spender address")
-
+    
     put(state{ allowed[(caller, spender)] = value })
     Chain.event(ApproveSpender(spender, value))
     true
@@ -67,12 +71,10 @@ contract EUR =
   stateful function _transfer(from: address, to: address, value: int) : bool =
     require(value > 0, "#Amount of funds to transfer must be grater than 0.#")
     require(value =< balance_of(from), "#Insufficient funds on user's wallet to make the transfer.#")
-    // require(to != #0, "Invalid address")
 
     put(state{
       balances[from] = balance_of(from) - value,
       balances[to] = balance_of(to) + value})
-
     true
 
   stateful entrypoint transfer_from(from: address, to: address, value: int) : bool =
@@ -119,3 +121,7 @@ contract EUR =
   function only_coop_user(wallet: address, errMsg: string) =
     let message = if (errMsg == "") "#Only registered platform user with activated wallet can make this action!#" else errMsg
     require(state.coop.is_wallet_active(wallet), errMsg)
+
+  function only_ampnet_member(wallet: address, errMsg: string) =
+    let message = if (errMsg == "") "#Only registered AMPnet user with activated wallet can make this action!#" else errMsg
+    require(state.coop.is_wallet_active(wallet) || state.coop.)

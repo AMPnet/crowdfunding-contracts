@@ -1,31 +1,35 @@
-contract CoopInterface =
-    entrypoint token : () => address
+contract ProjectInterface =
+    entrypoint get_coop : () => address
 
 contract Master = 
 
     datatype event =
-        CooperativeApproved(CoopInterface)
+        CooperativeApproved(address)
     
     record state = {
         owner                   : address,
-        approvedTokens          : map(address, bool) }
+        approvedCoops           : map(address, bool),
+        publicProjects          : map(address, bool) }
 
     stateful entrypoint init() : state =
         { owner = Call.origin,
-          approvedTokens = {} }
+          approvedCoops = {},
+          approvedProjects = {} }
 
-    stateful entrypoint approve_coop(coop: CoopInterface) =
+    stateful entrypoint approve_coop(coop: address) =
         only_owner()
-        put(state{ approvedTokens[coop.address] = true })
+        put(state{ approvedCoops[coop] = true })
         Chain.event(CooperativeApproved(coop))
 
-    entrypoint is_coop_approved(coop: CoopInterface) : bool = state.approvedTokens[coop.address]
+    stateful entrypoint publish_project(project: ProjectInterface) =
+        require(
+            is_coop_approved(project.get_coop()), 
+            "#Only approved Cooperatives can add new projects for inter-coop crowdfunding.#")
+        put(state { approvedProjects[project.address] = true })
+
+    entrypoint is_coop_approved(coop: address) : bool = state.approvedCoops[coop = false]
 
     entrypoint owner() : address = state.owner
 
     function only_owner() =
         require(Call.origin == state.owner, "#Only AMPnet can make this action!#")
-    
-
-
-    

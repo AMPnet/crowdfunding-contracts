@@ -11,11 +11,6 @@ contract CoopInterface =
     entrypoint owner : () => address
     entrypoint is_wallet_active : (address) => bool
 
-contract OrgInterface =
-    entrypoint is_verified : () => bool
-    entrypoint coop : () => CoopInterface
-    entrypoint owner : () => address
-
 contract SellOfferInterface =
     entrypoint get_offer: () => (int * int * address * map(address, int))
     entrypoint activate_offer : () => unit
@@ -34,7 +29,7 @@ contract Project =
       | SellOfferActivated(address, address)
 
     record state = {
-        organization                        : OrgInterface,
+        coop                                : CoopInterface,
         minInvestmentPerUser                : int,
         maxInvestmentPerUser                : int,
         investmentCap                       : int,
@@ -50,23 +45,16 @@ contract Project =
         allowed                             : map((address * address), int) }
 
     stateful entrypoint init(
-        organization: OrgInterface, 
+        coop: CoopInterface, 
         minInvestmentPerUser: int,
         maxInvestmentPerUSer: int,
         investmentCap: int,
         endsAt: int
         ) : state =
 
-        require(
-            Call.origin == organization.owner(),
-            "#Must be organization owner to be able to create project for funding.#")
-        require(
-            organization.is_verified(),
-            "#Organization must have an active wallet before it can create new project for funding#.")
-        
         Chain.event(ProjectCreated)
 
-        { organization = organization,
+        { coop = coop,
           minInvestmentPerUser = minInvestmentPerUser,
           maxInvestmentPerUser = maxInvestmentPerUSer,
           investmentCap = investmentCap,
@@ -197,6 +185,8 @@ contract Project =
         state.payoutInProcess
 
     entrypoint get_project_info() : (int * int * int * int * int * bool) = (state.minInvestmentPerUser, state.maxInvestmentPerUser, state.investmentCap, state.endsAt, state.totalFundsRaised, state.payoutInProcess)
+
+    entrypoint get_coop() : CoopInterface = state.coop
 
     entrypoint get_token() : TokenInterface = state.organization.coop().token()
 
